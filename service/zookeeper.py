@@ -13,7 +13,8 @@ from kazoo.client import KazooClient
 from kazoo.handlers.threading import KazooTimeoutError
 from model.db.zd_zookeeper import ZdZookeeper
 from conf import log
-from kazoo.security import ACL
+from conf.settings import ZK_AUTH
+from kazoo.security import make_digest_acl 
 import sys
 
 
@@ -36,13 +37,13 @@ def get_zoo_client(cluster_name="qconf"):
             raise ZookeeperConfError("Zookeeper not configured for cluster: {}!".format(cluster_name))
         # connect to zookeeper
         try:
+            username = ZK_AUTH.get('user')
+            pwd = ZK_AUTH.get('pwd')
             client = KazooClient(hosts=zookeeper.hosts,
                                  connection_retry={"max_tries": 3, "backoff": 2},
-                                 default_acl=ACL.make(
-                                     scheme='auth',
-                                     id='jinyuzk:KT4cqCNi42PZLV',
-                                     read=True, write=True, create=True, delete=True, admin=True
-                                    )
+                                 default_acl=make_digest_acl(username, pwd, 
+                                          read=True, write=True, create=True, delete=True, admin=True), 
+                                 auth_data=[("digest", '%s:%s' % (username, pwd))]
                                 )
             client.start(timeout=3)
             ZOO_CLIENTS[cluster_name] = client
