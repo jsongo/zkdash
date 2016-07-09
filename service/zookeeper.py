@@ -13,6 +13,7 @@ from kazoo.client import KazooClient
 from kazoo.handlers.threading import KazooTimeoutError
 from model.db.zd_zookeeper import ZdZookeeper
 from conf import log
+from kazoo.security import ACL
 import sys
 
 
@@ -36,7 +37,13 @@ def get_zoo_client(cluster_name="qconf"):
         # connect to zookeeper
         try:
             client = KazooClient(hosts=zookeeper.hosts,
-                                 connection_retry={"max_tries": 3, "backoff": 2})
+                                 connection_retry={"max_tries": 3, "backoff": 2},
+                                 default_acl=ACL.make(
+                                     scheme='auth',
+                                     id='jinyuzk:KT4cqCNi42PZLV',
+                                     read=True, write=True, create=True, delete=True, admin=True
+                                    )
+                                )
             client.start(timeout=3)
             ZOO_CLIENTS[cluster_name] = client
         except KazooTimeoutError as exc:
